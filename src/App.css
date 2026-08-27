@@ -1,1 +1,31 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/montaga";
+
+@theme {
+  --font-sans:
+    "Inter Variable", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  --font-inter:
+    "Inter Variable", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  --font-montaga: "Montaga", serif;
+
+  /* Obsidian-inspired dark palette */
+  --color-bg: #202020;
+  --color-bg-secondary: #161616;
+
+  --color-text: #dcddde;
+  --color-text-muted: #999999;
+  --color-text-faint: #666666;
+
+  --color-border: #333333;
+  --color-border-hover: #525252;
+
+  --color-button: #2a2a2a;
+  --color-buttonhover: #303030;
+
+  --color-accent: #483699;
+  --color-accenthover: #4d3ca6;
+  --color-accent-text: #7c6ce0;
+}

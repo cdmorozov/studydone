@@ -1,167 +1,150 @@
-import { useState, useEffect, ChangeEvent } from "react";
-import { Subject, Topic } from "./types";
+import { useState } from "react";
+import { useStudyLog } from "./useStudyLog";
+import { EditableText } from "./components/EditableText";
+import { ConfirmDelete } from "./components/ConfirmDelete";
 import "./App.css";
 
-type TopicListProps = {
-  subject: Subject | undefined;
-  addTopic: (subjectId: string, topic: Topic) => void;
-}
-
-function TopicList(props: TopicListProps) {
-  const subject = props.subject;
-
-  function handleAddTopic(formData: FormData) {
-    const value = formData.get("text") as string;
-
-    if (!value.trim() || !subject) return;
-
-    const topic: Topic = {
-      id: crypto.randomUUID(),
-      content: value,
-      date: new Date().toISOString(),
-    }
-
-    props.addTopic(subject.id, topic);
-  }
-
-
-  if (subject != undefined) {
-    return (
-      <div className="p-4">
-        <h2 className="px-2 pb-2 text-base font-medium text-[#dcddde]">
-          {subject.name}
-        </h2>
-
-        <ul className="flex flex-col gap-0.5">
-          {subject.topics.map((topic) => {
-            return (
-              <li key={topic.id} className="px-2 py-1 text-sm text-[#b3b3b3]">
-                {topic.content}
-              </li>
-            );
-          })}
-        </ul>
-
-        <form action={handleAddTopic}>
-          <input
-            name="text"
-            type="text"
-            placeholder="learn something..."
-            className={`
-              w-full px-2 py-1
-              bg-[#1e1e1e] text-sm text-[#dcddde] placeholder-[#6b6b6b]
-              border border-[#333333]
-              outline-none
-              focus:border-[#525252]
-            `}
-          />
-        </form>
-      </div>
-    );
-  }
-}
+const row = "flex items-center gap-2 rounded-md bg-button px-3 py-1.5 w-75 text-base";
 
 function App() {
-
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
-
-  const selectedSubject = subjects.find((subject) => subject.id == selectedSubjectId);
-
-  useEffect(() => {
-    setSubjects([
-      { id: crypto.randomUUID(), name: "Rust", topics: [] },
-    ]);
-  }, []);
-
-  function addTopic(subjectId: string, topic: Topic) {
-    setSubjects((subjects) =>
-      subjects.map((subject) =>
-        subject.id === subjectId
-          ? { ...subject, topics: [...subject.topics, topic] }
-          : subject
-      )
-    );
-  }
-
-  function handleAddSubject(formData: FormData) {
-    const value = formData.get("text") as string;
-    console.log(value);
-
-    if (!value.trim()) return;
-
-    setSubjects((subjects) => [
-      ...subjects,
-      {
-        id: crypto.randomUUID(),
-        name: value,
-        topics: []
-      }
-    ])
-  }
-
+  const log = useStudyLog();
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
-    <main className="flex h-screen bg-[#1e1e1e] text-[#dcddde]">
-      <aside className="flex h-full w-64 flex-col bg-[#262626] border-r border-[#333333]">
-        <h1 className="px-3 pt-3 pb-2 text-sm font-medium text-[#dcddde]">
-          study<span className="text-[#a882ff]">done</span>
-        </h1>
+    <main className="flex h-screen bg-bg text-text">
+      <div className="flex-col pl-56 pt-8 w-2xl justify-start overflow-y-auto">
+        {(log.subjects ?? []).map((subject) => (
+          <div key={subject.id} className="flex-col pb-8">
+            <h3 className="group flex items-center gap-2 w-75 mb-2 text-2xl font-medium font-inter">
+              <EditableText
+                value={subject.name}
+                editing={editingId === subject.id}
+                onEdit={() => setEditingId(subject.id)}
+                onCommit={(name) => {
+                  log.renameSubject(subject.id, name);
+                  setEditingId(null);
+                }}
+                onCancel={() => setEditingId(null)}
+                className="flex-1 min-w-0 truncate"
+              />
 
-        <nav className="flex-1 overflow-y-auto px-2">
-          <ul className="flex flex-col gap-0.5">
-            {subjects.map((subject) => {
-              return (
-                <li key={subject.id}>
-                  <button
-                    onClick={() => setSelectedSubjectId(subject.id)}
-                    className={`
-                      w-full px-2 py-1
-                      text-left text-sm
-                      transition-colors
-                      hover:bg-[#333333] hover:text-[#dcddde]
-                      ${selectedSubjectId === subject.id ? "bg-[#373737] text-[#dcddde]" : "text-[#b3b3b3]"}
-                    `}
-                  >
-                    {subject.name}
-                  </button>
+              {editingId !== subject.id && (
+                <RowActions
+                  onRename={() => setEditingId(subject.id)}
+                  renameLabel={`rename ${subject.name}`}
+                  deleteLabel={`delete ${subject.name} and its ${subject.topics.length} topics`}
+                  onDelete={() => log.deleteSubject(subject.id)}
+                />
+              )}
+            </h3>
+
+            <ul className="flex flex-col gap-1.5">
+              {subject.topics.map((topic) => (
+                <li key={topic.id} className={`${row} group text-text-muted`}>
+                  <span className="text-text-faint">•</span>
+
+                  <EditableText
+                    value={topic.content}
+                    editing={editingId === topic.id}
+                    onEdit={() => setEditingId(topic.id)}
+                    onCommit={(content) => {
+                      log.editTopic(subject.id, topic.id, content);
+                      setEditingId(null);
+                    }}
+                    onCancel={() => setEditingId(null)}
+                    className="flex-1 min-w-0"
+                  />
+
+                  {editingId !== topic.id && (
+                    <RowActions
+                      deleteLabel={`delete "${topic.content}"`}
+                      onDelete={() => log.deleteTopic(subject.id, topic.id)}
+                    />
+                  )}
                 </li>
-              );
-            })}
-          </ul>
-        </nav>
+              ))}
 
-        <form action={handleAddSubject} className="p-2 border-t border-[#1e1e1e]">
-          <input
-            name="text"
-            type="text"
-            placeholder="Math/Rust/Python etc."
-            className={`
-              w-full px-2 py-1
-              bg-[#1e1e1e] text-sm text-[#dcddde] placeholder-[#6b6b6b]
-              border border-[#333333]
-              outline-none
-              focus:border-[#525252]
-            `}
-          />
-        </form>
-      </aside>
+              <AddRow
+                placeholder="learn something..."
+                label="Add topic"
+                onAdd={(content) => log.addTopic(subject.id, content)}
+              />
+            </ul>
+          </div>
+        ))}
 
-      {selectedSubjectId != null && <TopicList subject={selectedSubject} addTopic={ addTopic }  />}
-
-      <section className="flex-1" />
+        <AddRow placeholder="name a subject..." label="Add subject" onAdd={log.addSubject} />
+      </div>
     </main>
   );
 }
 
-export default App;
+/** The trailing "+" row, which turns into an input when you click it. */
+function AddRow(props: { placeholder: string; label: string; onAdd: (value: string) => void }) {
+  const [adding, setAdding] = useState(false);
 
-// Создать тему
-// Создать топик
-// Записать топик в тему
-// Хранить темы.
-//
-// приложение.
-// Старница 1: subjects list + input
-// click on subject -> Страница 2: subject.topics list + input
-//
+  function handleAdd(formData: FormData) {
+    props.onAdd(String(formData.get("value") ?? ""));
+    setAdding(false);
+  }
+
+  return (
+    <li className={`${row} list-none`}>
+      <span className="text-text-faint">+</span>
+
+      {adding ? (
+        <form action={handleAdd} className="flex-1 min-w-0">
+          <input
+            autoFocus
+            name="value"
+            autoComplete="off"
+            placeholder={props.placeholder}
+            onBlur={(event) => event.currentTarget.form?.requestSubmit()}
+            onKeyDown={(event) => event.key === "Escape" && setAdding(false)}
+            className="w-full h-5 bg-transparent text-text placeholder-text-faint outline-none leading-none"
+          />
+        </form>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          className="flex-1 text-left text-text-faint hover:text-text-muted transition-colors cursor-pointer"
+        >
+          {props.label}
+        </button>
+      )}
+    </li>
+  );
+}
+
+/** Rename and delete, revealed on hover so the rows stay quiet until you reach for them. */
+function RowActions(props: {
+  onRename?: () => void;
+  renameLabel?: string;
+  deleteLabel: string;
+  onDelete: () => void;
+}) {
+  return (
+    <span className="hidden shrink-0 items-center gap-2 text-base text-text-faint group-hover:flex group-focus-within:flex">
+      {props.onRename && (
+        <button
+          onClick={props.onRename}
+          aria-label={props.renameLabel}
+          className="cursor-pointer hover:text-text transition-colors"
+        >
+          <PencilIcon />
+        </button>
+      )}
+      <ConfirmDelete label={props.deleteLabel} onConfirm={props.onDelete} className="leading-none" />
+    </span>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 20h4L20 8l-4-4L4 16z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export default App;
