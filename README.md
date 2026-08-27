@@ -1,20 +1,14 @@
 # StudyDone
 
-A small desktop app to log what you learned, by subject.
+A small desktop app for a daily log of what you learned today.
 
-Pick a subject, type what you covered, press Enter. Entries are grouped by day.
-
-<br>
+Choose a subject, write what you learned, press Enter. Notes are grouped by day.
 
 ![StudyDone](docs/screenshot.png)
-
-<br>
 
 ## Download
 
 Latest builds: **[Releases](https://github.com/cdmorozov/studydone/releases/latest)**
-
-<br>
 
 | File | For |
 | --- | --- |
@@ -22,35 +16,16 @@ Latest builds: **[Releases](https://github.com/cdmorozov/studydone/releases/late
 | `StudyDone-*.rpm` | Fedora, RHEL, openSUSE |
 | `StudyDone_*.AppImage` | Any Linux |
 
-<br>
+AppImage is larger (~100 MB) because it ships WebKit.  
+The `.rpm` / `.deb` are ~5 MB and use the system WebKit.
 
-```bash
-# Ubuntu / Debian
-sudo apt install ./StudyDone_0.1.0_amd64.deb
+## Stack
 
-# Fedora
-sudo dnf install ./StudyDone-0.1.0-1.x86_64.rpm
-
-# AppImage
-chmod +x StudyDone_0.1.0_amd64.AppImage
-./StudyDone_0.1.0_amd64.AppImage
-```
-
-<br>
-
-AppImage is larger (~100 MB) because it ships WebKit. The `.rpm` / `.deb` are ~5 MB and use the system WebKit.
-
-<br>
+Desktop shell is **Tauri 2** (Rust + system WebKit). The UI is **React 19**, **TypeScript**, **Vite 7**, and **Tailwind CSS 4**. Package manager is **Bun**.
 
 ## Develop
 
 ```bash
 bun install
 bun tauri dev
-```
-
-<br>
-
-```bash
-bun tauri build
 ```
