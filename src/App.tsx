@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStudyLog } from "./useStudyLog";
+import { today } from "./day";
 import { EditableText } from "./components/EditableText";
 import { ConfirmDelete } from "./components/ConfirmDelete";
 import "./App.css";
@@ -9,10 +10,31 @@ const row = "flex items-center gap-2 rounded-md bg-button px-3 py-1.5 w-75 text-
 function App() {
   const log = useStudyLog();
   const [editingId, setEditingId] = useState<string | null>(null);
+  /** Which day's topics are showing, and which day new ones are logged under. */
+  const [day, setDay] = useState(today());
 
   return (
     <main className="flex h-screen bg-bg text-text">
       <div className="flex-col pl-56 pt-8 w-2xl justify-start overflow-y-auto">
+        <div className="flex items-center gap-3 w-75 mb-8">
+          <input
+            type="date"
+            value={day}
+            max={today()}
+            onChange={(event) => setDay(event.target.value || today())}
+            aria-label="day"
+            className="rounded-md bg-button px-3 py-1.5 text-base text-text outline-none [color-scheme:dark]"
+          />
+          {day !== today() && (
+            <button
+              onClick={() => setDay(today())}
+              className="text-sm text-text-faint hover:text-text-muted transition-colors cursor-pointer"
+            >
+              Today
+            </button>
+          )}
+        </div>
+
         {(log.subjects ?? []).map((subject) => (
           <div key={subject.id} className="flex-col pb-8">
             <h3 className="group flex items-center gap-2 w-75 mb-2 text-2xl font-medium font-inter">
@@ -39,7 +61,7 @@ function App() {
             </h3>
 
             <ul className="flex flex-col gap-1.5">
-              {subject.topics.map((topic) => (
+              {subject.topics.filter((topic) => topic.date === day).map((topic) => (
                 <li key={topic.id} className={`${row} group text-text-muted`}>
                   <span className="text-text-faint">•</span>
 
@@ -67,7 +89,7 @@ function App() {
               <AddRow
                 placeholder="learn something..."
                 label="Add topic"
-                onAdd={(content) => log.addTopic(subject.id, content)}
+                onAdd={(content) => log.addTopic(subject.id, content, day)}
               />
             </ul>
           </div>

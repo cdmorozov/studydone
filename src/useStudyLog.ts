@@ -47,15 +47,11 @@ export function useStudyLog() {
     update((subjects) => subjects.filter((subject) => subject.id !== id));
   }
 
-  function addTopic(subjectId: string, content: string) {
+  function addTopic(subjectId: string, content: string, day: string) {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    const topic: Topic = {
-      id: crypto.randomUUID(),
-      content: trimmed,
-      date: new Date().toISOString(),
-    };
+    const topic: Topic = { id: crypto.randomUUID(), content: trimmed, date: day };
     updateSubject(subjectId, (subject) => ({ ...subject, topics: [...subject.topics, topic] }));
   }
 
