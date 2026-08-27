@@ -18,13 +18,15 @@ type Props = {
  */
 export function EditableText(props: Props) {
   const cancelled = useRef(false);
+  const className = `editable ${props.className ?? ""}`;
 
   if (!props.editing) {
     return (
       <button
+        type="button"
         onClick={props.onClick ?? props.onEdit}
         onDoubleClick={props.onEdit}
-        className={`${props.className} cursor-text text-left`}
+        className={`${className} cursor-text text-left`}
       >
         {props.value}
       </button>
@@ -36,7 +38,7 @@ export function EditableText(props: Props) {
       autoFocus
       defaultValue={props.value}
       onFocus={(event) => event.currentTarget.select()}
-      className={`${props.className} bg-transparent caret-accent-text outline-none`}
+      className={className}
       onKeyDown={(event) => {
         if (event.key === "Escape") cancelled.current = true;
         if (event.key === "Escape" || event.key === "Enter") event.currentTarget.blur();

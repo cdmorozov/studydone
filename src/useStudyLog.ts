@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Subject, Topic } from "./types";
 import { loadSubjects, saveSubjects } from "./storage";
+import { today } from "./day";
 
 /**
  * The whole app state: the subjects, read from disk once and written back
@@ -8,13 +9,18 @@ import { loadSubjects, saveSubjects } from "./storage";
  */
 export function useStudyLog() {
   const [subjects, setSubjects] = useState<Subject[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadSubjects().then(setSubjects);
+    loadSubjects()
+      .then(setSubjects)
+      .catch(() => setError("Couldn't load your study log."));
   }, []);
 
   useEffect(() => {
-    if (subjects) saveSubjects(subjects);
+    if (subjects) {
+      saveSubjects(subjects).catch(() => setError("Couldn't save — your last change may be lost."));
+    }
   }, [subjects]);
 
   function update(change: (subjects: Subject[]) => Subject[]) {
@@ -28,11 +34,13 @@ export function useStudyLog() {
     );
   }
 
-  function addSubject(name: string) {
+  function addSubject(name: string): string | undefined {
     const trimmed = name.trim();
     if (!trimmed) return;
 
-    update((subjects) => [...subjects, { id: crypto.randomUUID(), name: trimmed, topics: [] }]);
+    const id = crypto.randomUUID();
+    update((subjects) => [...subjects, { id, name: trimmed, topics: [] }]);
+    return id;
   }
 
   function renameSubject(id: string, name: string) {
@@ -47,11 +55,11 @@ export function useStudyLog() {
     update((subjects) => subjects.filter((subject) => subject.id !== id));
   }
 
-  function addTopic(subjectId: string, content: string, day: string) {
+  function addTopic(subjectId: string, content: string) {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    const topic: Topic = { id: crypto.randomUUID(), content: trimmed, date: day };
+    const topic: Topic = { id: crypto.randomUUID(), content: trimmed, date: today() };
     updateSubject(subjectId, (subject) => ({ ...subject, topics: [...subject.topics, topic] }));
   }
 
@@ -76,6 +84,7 @@ export function useStudyLog() {
 
   return {
     subjects,
+    error,
     addSubject,
     renameSubject,
     deleteSubject,

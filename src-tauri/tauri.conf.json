@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "studydone",
+  "productName": "StudyDone",
   "version": "0.1.0",
   "identifier": "com.artem.studydone",
   "build": {
@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "studydone",
-        "width": 800,
-        "height": 600
+        "title": "StudyDone",
+        "width": 1080,
+        "height": 720,
+        "minWidth": 640,
+        "minHeight": 440
       }
     ],
     "security": {
@@ -26,8 +28,10 @@
     "targets": "all",
     "icon": [
       "icons/32x32.png",
+      "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
+      "icons/icon.png",
       "icons/icon.icns",
       "icons/icon.ico"
     ]

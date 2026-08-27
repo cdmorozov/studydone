@@ -1,171 +1,102 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStudyLog } from "./useStudyLog";
-import { today } from "./day";
-import { EditableText } from "./components/EditableText";
-import { ConfirmDelete } from "./components/ConfirmDelete";
+import { Sidebar } from "./components/Sidebar";
+import { SubjectPane } from "./components/SubjectPane";
+import { IconSidebar } from "./components/icons";
 import "./App.css";
 
-const row = "flex items-center gap-2 rounded-md bg-button px-3 py-1.5 w-75 text-base";
+const SELECTED_KEY = "studydone.subject";
+
+function readSelected(): string | null {
+  try {
+    return localStorage.getItem(SELECTED_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function App() {
   const log = useStudyLog();
+  const [selectedId, setSelectedId] = useState<string | null>(readSelected);
   const [editingId, setEditingId] = useState<string | null>(null);
-  /** Which day's topics are showing, and which day new ones are logged under. */
-  const [day, setDay] = useState(today());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const subjects = log.subjects;
+
+  useEffect(() => {
+    if (!subjects?.length) {
+      if (subjects?.length === 0) setSelectedId(null);
+      return;
+    }
+    if (!selectedId || !subjects.some((subject) => subject.id === selectedId)) {
+      setSelectedId(subjects[0].id);
+    }
+  }, [subjects, selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    try {
+      localStorage.setItem(SELECTED_KEY, selectedId);
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [selectedId]);
+
+  const selected = subjects?.find((subject) => subject.id === selectedId) ?? null;
 
   return (
-    <main className="flex h-screen bg-bg text-text">
-      <div className="flex-col pl-56 pt-8 w-2xl justify-start overflow-y-auto">
-        <div className="flex items-center gap-3 w-75 mb-8">
-          <input
-            type="date"
-            value={day}
-            max={today()}
-            onChange={(event) => setDay(event.target.value || today())}
-            aria-label="day"
-            className="rounded-md bg-button px-3 py-1.5 text-base text-text outline-none [color-scheme:dark]"
-          />
-          {day !== today() && (
-            <button
-              onClick={() => setDay(today())}
-              className="text-sm text-text-faint hover:text-text-muted transition-colors cursor-pointer"
-            >
-              Today
-            </button>
-          )}
-        </div>
+    <div className="flex h-dvh overflow-hidden bg-bg font-sans text-text">
+      <Sidebar
+        subjects={subjects ?? []}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        onAdd={(name) => {
+          const id = log.addSubject(name);
+          if (id) setSelectedId(id);
+        }}
+        onDelete={log.deleteSubject}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-        {(log.subjects ?? []).map((subject) => (
-          <div key={subject.id} className="flex-col pb-8">
-            <h3 className="group flex items-center gap-2 w-75 mb-2 text-2xl font-medium font-inter">
-              <EditableText
-                value={subject.name}
-                editing={editingId === subject.id}
-                onEdit={() => setEditingId(subject.id)}
-                onCommit={(name) => {
-                  log.renameSubject(subject.id, name);
-                  setEditingId(null);
-                }}
-                onCancel={() => setEditingId(null)}
-                className="flex-1 min-w-0 truncate"
-              />
-
-              {editingId !== subject.id && (
-                <RowActions
-                  onRename={() => setEditingId(subject.id)}
-                  renameLabel={`rename ${subject.name}`}
-                  deleteLabel={`delete ${subject.name} and its ${subject.topics.length} topics`}
-                  onDelete={() => log.deleteSubject(subject.id)}
-                />
-              )}
-            </h3>
-
-            <ul className="flex flex-col gap-1.5">
-              {subject.topics.filter((topic) => topic.date === day).map((topic) => (
-                <li key={topic.id} className={`${row} group text-text-muted`}>
-                  <span className="text-text-faint">•</span>
-
-                  <EditableText
-                    value={topic.content}
-                    editing={editingId === topic.id}
-                    onEdit={() => setEditingId(topic.id)}
-                    onCommit={(content) => {
-                      log.editTopic(subject.id, topic.id, content);
-                      setEditingId(null);
-                    }}
-                    onCancel={() => setEditingId(null)}
-                    className="flex-1 min-w-0"
-                  />
-
-                  {editingId !== topic.id && (
-                    <RowActions
-                      deleteLabel={`delete "${topic.content}"`}
-                      onDelete={() => log.deleteTopic(subject.id, topic.id)}
-                    />
-                  )}
-                </li>
-              ))}
-
-              <AddRow
-                placeholder="learn something..."
-                label="Add topic"
-                onAdd={(content) => log.addTopic(subject.id, content, day)}
-              />
-            </ul>
-          </div>
-        ))}
-
-        <AddRow placeholder="name a subject..." label="Add subject" onAdd={log.addSubject} />
-      </div>
-    </main>
-  );
-}
-
-/** The trailing "+" row, which turns into an input when you click it. */
-function AddRow(props: { placeholder: string; label: string; onAdd: (value: string) => void }) {
-  const [adding, setAdding] = useState(false);
-
-  function handleAdd(formData: FormData) {
-    props.onAdd(String(formData.get("value") ?? ""));
-    setAdding(false);
-  }
-
-  return (
-    <li className={`${row} list-none`}>
-      <span className="text-text-faint">+</span>
-
-      {adding ? (
-        <form action={handleAdd} className="flex-1 min-w-0">
-          <input
-            autoFocus
-            name="value"
-            autoComplete="off"
-            placeholder={props.placeholder}
-            onBlur={(event) => event.currentTarget.form?.requestSubmit()}
-            onKeyDown={(event) => event.key === "Escape" && setAdding(false)}
-            className="w-full h-5 bg-transparent text-text placeholder-text-faint outline-none leading-none"
-          />
-        </form>
-      ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="flex-1 text-left text-text-faint hover:text-text-muted transition-colors cursor-pointer"
+      {log.error && (
+        <p
+          aria-live="polite"
+          className="absolute top-3 right-3 z-40 rounded-md bg-hover px-3 py-1.5 text-sm text-muted"
         >
-          {props.label}
-        </button>
+          {log.error}
+        </p>
       )}
-    </li>
-  );
-}
 
-/** Rename and delete, revealed on hover so the rows stay quiet until you reach for them. */
-function RowActions(props: {
-  onRename?: () => void;
-  renameLabel?: string;
-  deleteLabel: string;
-  onDelete: () => void;
-}) {
-  return (
-    <span className="hidden shrink-0 items-center gap-2 text-base text-text-faint group-hover:flex group-focus-within:flex">
-      {props.onRename && (
-        <button
-          onClick={props.onRename}
-          aria-label={props.renameLabel}
-          className="cursor-pointer hover:text-text transition-colors"
-        >
-          <PencilIcon />
-        </button>
+      {subjects === null && (
+        <p className="flex flex-1 items-center justify-center text-sm text-faint">Loading…</p>
       )}
-      <ConfirmDelete label={props.deleteLabel} onConfirm={props.onDelete} className="leading-none" />
-    </span>
-  );
-}
 
-function PencilIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 20h4L20 8l-4-4L4 16z" strokeLinejoin="round" />
-    </svg>
+      {subjects !== null && selected && (
+        <SubjectPane
+          subject={selected}
+          log={log}
+          editingId={editingId}
+          setEditingId={setEditingId}
+          onOpenSidebar={() => setSidebarOpen(true)}
+        />
+      )}
+
+      {subjects !== null && !selected && (
+        <main className="flex min-w-0 flex-1 flex-col items-center justify-center px-6">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open subjects"
+            className="mb-6 flex h-11 w-11 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-hover hover:text-text md:hidden"
+          >
+            <IconSidebar />
+          </button>
+          <p className="text-sm text-muted">Add a subject to start logging.</p>
+          <p className="mt-1 text-[13px] text-faint">Math, History, anything you’re studying.</p>
+        </main>
+      )}
+    </div>
   );
 }
 
