@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Subject, Topic } from "./types";
 import { loadSubjects, saveSubjects } from "./storage";
-import { today } from "./day";
+import { dayOf } from "./day";
 
 /**
  * The whole app state: the subjects, read from disk once and written back
@@ -59,7 +59,13 @@ export function useStudyLog() {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    const topic: Topic = { id: crypto.randomUUID(), content: trimmed, date: today() };
+    const now = new Date();
+    const topic: Topic = {
+      id: crypto.randomUUID(),
+      content: trimmed,
+      date: dayOf(now),
+      createdAt: now.toISOString(),
+    };
     updateSubject(subjectId, (subject) => ({ ...subject, topics: [...subject.topics, topic] }));
   }
 

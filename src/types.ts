@@ -2,9 +2,11 @@
 export type Topic = {
   id: string;
   content: string;
-  /** The day you learned it, local time, "YYYY-MM-DD" — matches <input type="date">. */
-  date: string
-}
+  /** Study-log day, "YYYY-MM-DD". Rolls over at 04:00 local time, not midnight. */
+  date: string;
+  /** When the topic was added, ISO-8601. Used to regroup if the day boundary changes. */
+  createdAt?: string;
+};
 
 export type Subject = {
   id: string;

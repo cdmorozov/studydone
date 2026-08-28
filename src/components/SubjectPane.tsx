@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Subject } from "../types";
-import { formatHeading, groupByDay } from "../day";
+import { formatHeading, groupByDay, today } from "../day";
 import { EditableText } from "./EditableText";
 import { ConfirmDelete } from "./ConfirmDelete";
 import { Composer } from "./Composer";
@@ -30,10 +30,23 @@ export function SubjectPane({
   onOpenSidebar,
 }: Props) {
   const composerRef = useRef<HTMLInputElement>(null);
+  const [now, setNow] = useState(today);
 
   useEffect(() => {
     composerRef.current?.focus();
   }, [subject.id]);
+
+  useEffect(() => {
+    const sync = () => setNow(today());
+    const id = setInterval(sync, 30_000);
+    window.addEventListener("focus", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", sync);
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, []);
 
   const groups = groupByDay(subject.topics);
   const topicCount = subject.topics.length;
@@ -111,7 +124,7 @@ export function SubjectPane({
               <div className="mt-8 flex flex-col gap-8">
                 {groups.map((group) => (
                   <section key={group.date}>
-                    <h2 className="mb-1 text-[12px] text-muted">{formatHeading(group.date)}</h2>
+                    <h2 className="mb-1 text-[12px] text-muted">{formatHeading(group.date, now)}</h2>
                     <ul className="flex flex-col">
                       {group.items.map((topic) => (
                         <li
